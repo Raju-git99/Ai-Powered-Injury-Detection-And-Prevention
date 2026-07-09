@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@theme {
+  /* Existing light gradient */
+  --background-image-light-gradient: linear-gradient(135deg, #f8fafc 0%, #eef2ff 50%, #f1f5f9 100%);
+  
+  /* Custom Greyish Black for Dark Mode */
+  --color-grey-dark: #121417; 
+}
+
+/* Ensure the 'dark' variant looks for the class on the html tag */
+@custom-variant dark (&:where(.dark, .dark *));

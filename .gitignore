@@ -1,0 +1,25 @@
+# Frontend
+injury-frontend/node_modules
+
+# Backend
+server/.venv
+server/db.sqlite3
+
+# Python
+**/__pycache__/
+*.py[cod]
+
+# Environment
+.env
+
+# Uploads
+server/uploads/
+server/media/
+server/temp_videos/
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

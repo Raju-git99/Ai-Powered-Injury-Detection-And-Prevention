@@ -35,6 +35,112 @@ def calculate_movement(prev_lm, curr_lm, indices):
         movement += (dx**2 + dy**2) ** 0.5
     return movement
 
+def detect_phase(exercise, lm):
+
+    if exercise == "Pushups":
+
+        elbow = calculate_angle(
+            [lm[11].x, lm[11].y],
+            [lm[13].x, lm[13].y],
+            [lm[15].x, lm[15].y]
+        )
+
+        if elbow > 165:
+            return "READY"
+
+        elif elbow > 110:
+            return "MOVING"
+
+        else:
+            return "TOP"
+
+    elif exercise == "Jumping Squats":
+
+        knee = calculate_angle(
+            [lm[23].x, lm[23].y],
+            [lm[25].x, lm[25].y],
+            [lm[27].x, lm[27].y]
+        )
+
+        if knee > 165:
+            return "READY"
+
+        elif knee > 120:
+            return "MOVING"
+
+        else:
+            return "TOP"
+    elif exercise == "Lunges":
+
+        knee_angle = calculate_angle(
+            [lm[23].x, lm[23].y],
+            [lm[25].x, lm[25].y],
+            [lm[27].x, lm[27].y]
+        )
+
+        if knee_angle > 165:
+            return "READY"
+
+        elif knee_angle > 110:
+            return "MOVING"
+
+        else:
+            return "TOP"
+    elif exercise == "Leg Raises":
+
+        hip = lm[23].y
+        ankle = lm[27].y
+
+        leg_height = hip - ankle
+
+        if leg_height < 0.05:
+            return "READY"
+
+        elif leg_height < 0.20:
+            return "MOVING"
+
+        else:
+            return "TOP"
+    elif exercise == "Mountain Climbers":
+
+        knee_drive = abs(
+            lm[25].x - lm[23].x
+        )
+
+        if knee_drive < 0.05:
+            return "READY"
+
+        elif knee_drive < 0.15:
+            return "MOVING"
+
+        else:
+            return "TOP"
+
+    elif exercise == "Bridges":
+
+        shoulder = [lm[11].x, lm[11].y]
+        hip = [lm[23].x, lm[23].y]
+        knee = [lm[25].x, lm[25].y]
+
+        hip_angle = calculate_angle(
+            shoulder,
+            hip,
+            knee
+        )
+
+        # Person lying down
+        if hip_angle < 130:
+            return "READY"
+
+        # Lifting hips
+        elif hip_angle < 155:
+            return "MOVING"
+
+        # Top bridge position
+        else:
+            return "TOP"
+
+    return "MOVING"
 
 # -----------------------------
 # Posture Evaluation
@@ -81,16 +187,34 @@ def evaluate_posture(exercise, lm):
 
 
     elif exercise == "Bridges":
+
         hip_angle = calculate_angle(
             [lm[11].x, lm[11].y],
             [lm[23].x, lm[23].y],
             [lm[25].x, lm[25].y]
         )
+        # print("Bridge Hip Angle:", hip_angle)
 
-        if hip_angle > 150:
-            return {"fault": "Good bridge posture", "risk": 20}
+        if hip_angle < 155:
+
+            return {
+                "fault": "Hips not lifted enough",
+                "risk": 55
+            }
+
+        elif hip_angle > 180:
+
+            return {
+                "fault": "Lower back overextension",
+                "risk": 60
+            }
+
         else:
-            return {"fault": "Hips not lifted enough", "risk": 55}
+
+            return {
+                "fault": "Good bridge posture",
+                "risk": 20
+            }
 
 
     elif exercise == "Leg Raises":
@@ -239,7 +363,7 @@ def analyze_video(video_path, exercise_name):
         fps,
         (width, height)
     )
-    print("Writer opened:", writer.isOpened())
+    # print("Writer opened:", writer.isOpened())
 
     pose = mp_pose.Pose(
         static_image_mode=False,
@@ -260,6 +384,10 @@ def analyze_video(video_path, exercise_name):
     improper_frames = 0
     fault_counter = {}
     exercise_match_frames = 0
+    
+    exercise_state = "WAITING"
+    previous_phase = "WAITING"
+    rep_count = 0
 
     prev_landmarks = None
     frame_skip = 1
@@ -350,7 +478,7 @@ def analyze_video(video_path, exercise_name):
         valid_pose_frames += 1
 
         # Early stop
-        if valid_pose_frames > 300:
+        if valid_pose_frames > 600:
             break
 
         # Motion detection
@@ -470,10 +598,10 @@ def analyze_video(video_path, exercise_name):
 
             leg_raise = max(left_raise, right_raise)
 
-            print(
-                f"Straight Leg: {straight_leg:.2f}, "
-                f"Leg Distance: {leg_raise:.2f}"
-            )
+            # print(
+            #     f"Straight Leg: {straight_leg:.2f}, "
+            #     f"Leg Distance: {leg_raise:.2f}"
+            # )
 
             if (
                 straight_leg > 55 and
@@ -503,7 +631,30 @@ def analyze_video(video_path, exercise_name):
                 exercise_match_frames += 1
 
         # Posture evaluation
-        result = evaluate_posture(exercise_name, lm)
+        phase = detect_phase(
+            exercise_name,
+            lm
+        )
+        if previous_phase == "TOP" and phase == "READY":
+            rep_count += 1
+
+        previous_phase = phase
+
+        if phase in ["MOVING", "TOP"]:
+
+            result = evaluate_posture(
+                exercise_name,
+                lm
+            )
+
+        else:
+
+            result = {
+                "fault": "Preparing...",
+                "risk": 0
+            }
+
+        # print("Phase:", phase)
         fault = result["fault"]
         
         if result["risk"] > 40:
@@ -632,9 +783,9 @@ def analyze_video(video_path, exercise_name):
             "status": "exercise_not_detected",
             "message": "No exercise movement detected"
         }
-    print("Valid Pose Frames:", valid_pose_frames)
-    print("Exercise Match Frames:", exercise_match_frames)
-    print("Threshold:", valid_pose_frames * INVALID_EX_THRESHOLD)
+    # print("Valid Pose Frames:", valid_pose_frames)
+    # print("Exercise Match Frames:", exercise_match_frames)
+    # print("Threshold:", valid_pose_frames * INVALID_EX_THRESHOLD)
 
     MIN_MATCH_FRAMES = 5
 
@@ -661,341 +812,3 @@ def analyze_video(video_path, exercise_name):
     }
 
 
-
-
-
-
-
-# import cv2
-# import mediapipe as mp
-# import numpy as np
-# import os
-
-# mp_pose = mp.solutions.pose
-
-
-# # -----------------------------
-# # Utility: Angle calculation
-# # -----------------------------
-# def calculate_angle(a, b, c):
-#     a = np.array(a)
-#     b = np.array(b)
-#     c = np.array(c)
-
-#     radians = np.arctan2(c[1] - b[1], c[0] - b[0]) - \
-#               np.arctan2(a[1] - b[1], a[0] - b[0])
-#     angle = abs(radians * 180.0 / np.pi)
-
-#     if angle > 180:
-#         angle = 360 - angle
-
-#     return angle
-
-
-# # -----------------------------
-# # Movement Calculation
-# # -----------------------------
-# def calculate_movement(prev_lm, curr_lm, indices):
-#     movement = 0.0
-#     for i in indices:
-#         dx = curr_lm[i].x - prev_lm[i].x
-#         dy = curr_lm[i].y - prev_lm[i].y
-#         movement += (dx**2 + dy**2) ** 0.5
-#     return movement
-
-
-# # -----------------------------
-# # Posture Evaluation
-# # -----------------------------
-# def evaluate_posture(exercise, lm):
-
-#     if exercise == "Jumping Squats":
-#         knee_angle = calculate_angle(
-#             [lm[23].x, lm[23].y],
-#             [lm[25].x, lm[25].y],
-#             [lm[27].x, lm[27].y]
-#         )
-
-#         if knee_angle < 140:
-#             return {"fault": "Knees bending correctly", "risk": 30}
-#         else:
-#             return {"fault": "Insufficient squat bend", "risk": 50}
-
-
-#     elif exercise == "Lunges":
-#         knee_angle = calculate_angle(
-#             [lm[23].x, lm[23].y],
-#             [lm[25].x, lm[25].y],
-#             [lm[27].x, lm[27].y]
-#         )
-
-#         if 80 < knee_angle < 160:
-#             return {"fault": "Good lunge posture", "risk": 25}
-#         else:
-#             return {"fault": "Improper lunge angle", "risk": 55}
-
-
-#     elif exercise == "Pushups":
-#         elbow_angle = calculate_angle(
-#             [lm[11].x, lm[11].y],
-#             [lm[13].x, lm[13].y],
-#             [lm[15].x, lm[15].y]
-#         )
-
-#         if elbow_angle < 140:
-#             return {"fault": "Good pushup depth", "risk": 25}
-#         else:
-#             return {"fault": "Arms not bending enough", "risk": 50}
-
-
-#     elif exercise == "Bridges":
-#         hip_angle = calculate_angle(
-#             [lm[11].x, lm[11].y],
-#             [lm[23].x, lm[23].y],
-#             [lm[25].x, lm[25].y]
-#         )
-
-#         if hip_angle > 150:
-#             return {"fault": "Good bridge posture", "risk": 20}
-#         else:
-#             return {"fault": "Hips not lifted enough", "risk": 55}
-
-
-#     elif exercise == "Leg Raises":
-#         leg_angle = calculate_angle(
-#             [lm[23].x, lm[23].y],
-#             [lm[25].x, lm[25].y],
-#             [lm[27].x, lm[27].y]
-#         )
-
-#         if leg_angle > 150:
-#             return {"fault": "Good leg raise", "risk": 20}
-#         else:
-#             return {"fault": "Legs not raised high enough", "risk": 50}
-
-
-#     elif exercise == "Mountain Climbers":
-#         body_angle = calculate_angle(
-#             [lm[11].x, lm[11].y],
-#             [lm[23].x, lm[23].y],
-#             [lm[27].x, lm[27].y]
-#         )
-
-#         if 140 < body_angle < 190:
-#             return {"fault": "Good climber posture", "risk": 25}
-#         else:
-#             return {"fault": "Body alignment incorrect", "risk": 55}
-
-
-#     return {"fault": "Good posture", "risk": 20}
-
-# # -----------------------------
-# # Suggestions
-# # -----------------------------
-# def get_suggestions(fault):
-
-#     suggestions = {
-
-#         "Insufficient squat bend": [
-#             "Bend your knees further",
-#             "Lower your hips slightly"
-#         ],
-
-#         "Improper lunge angle": [
-#             "Keep front knee aligned with ankle",
-#             "Avoid excessive forward lean"
-#         ],
-
-#         "Arms not bending enough": [
-#             "Lower your body further",
-#             "Maintain full pushup range of motion"
-#         ],
-
-#         "Hips not lifted enough": [
-#             "Lift hips higher",
-#             "Engage glute muscles"
-#         ],
-
-#         "Legs not raised high enough": [
-#             "Raise legs further upward",
-#             "Keep legs straight"
-#         ],
-
-#         "Body alignment incorrect": [
-#             "Maintain a straight body line",
-#             "Avoid excessive hip movement"
-#         ],
-
-#         "Good posture": [
-#             "Maintain current form"
-#         ]
-#     }
-
-#     return suggestions.get(
-#         fault,
-#         ["Perform controlled movements"]
-#     )
-# # -----------------------------
-# # Main Analysis Engine
-# # -----------------------------
-# def analyze_video(video_path, exercise_name):
-
-#     cap = cv2.VideoCapture(video_path)
-
-#     pose = mp_pose.Pose(
-#         model_complexity=0,
-#         min_detection_confidence=0.5,
-#         min_tracking_confidence=0.5
-#     )
-
-#     MIN_MOTION_RATIO = 0.20
-#     INVALID_EX_THRESHOLD = 0.15
-
-#     motion_indices = [11, 13, 15, 23, 25, 27]
-
-#     total_frames = 0
-#     valid_pose_frames = 0
-#     motion_frames = 0
-#     improper_frames = 0
-#     fault_counter = {}
-#     exercise_match_frames = 0
-
-#     prev_landmarks = None
-#     frame_skip = 3
-#     frame_count = 0
-
-#     while cap.isOpened():
-#         ret, frame = cap.read()
-#         if not ret:
-#             break
-
-#         frame_count += 1
-#         if frame_count % frame_skip != 0:
-#             continue
-
-#         total_frames += 1
-
-#         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-#         results = pose.process(image)
-
-#         if not results.pose_landmarks:
-#             continue
-
-#         lm = results.pose_landmarks.landmark
-#         valid_pose_frames += 1
-
-#         # Early stop
-#         if valid_pose_frames > 60:
-#             break
-
-#         # Motion detection
-#         if prev_landmarks:
-#             movement = calculate_movement(prev_landmarks, lm, motion_indices)
-#             if movement > 0.01:
-#                 motion_frames += 1
-
-#         prev_landmarks = lm
-
-#         # -------- EXERCISE VALIDATION --------
-#         if exercise_name == "Jumping Squats":
-#             knee_angle = calculate_angle(
-#                 [lm[23].x, lm[23].y],
-#                 [lm[25].x, lm[25].y],
-#                 [lm[27].x, lm[27].y]
-#                 )
-#             if knee_angle < 150:
-#                 exercise_match_frames += 1
-
-
-#         elif exercise_name == "Lunges":
-#             knee_angle = calculate_angle(
-#                [lm[23].x, lm[23].y],
-#                [lm[25].x, lm[25].y],
-#                [lm[27].x, lm[27].y]
-#                )
-#             if 70 < knee_angle < 170:
-#                 exercise_match_frames += 1
-
-
-#         elif exercise_name == "Pushups":
-#             elbow_angle = calculate_angle(
-#                 [lm[11].x, lm[11].y],
-#                 [lm[13].x, lm[13].y],
-#                 [lm[15].x, lm[15].y]
-#                 )
-#             shoulder_y = lm[11].y
-#             hip_y = lm[23].y
-#             body_horizontal = abs(shoulder_y - hip_y) < 0.2
-#             if elbow_angle < 160 and body_horizontal:
-#                 exercise_match_frames += 1
-                
-#         elif exercise_name == "Bridges":
-#             hip_angle = calculate_angle(
-#                 [lm[11].x, lm[11].y],
-#                 [lm[23].x, lm[23].y],
-#                 [lm[25].x, lm[25].y]
-#                 )
-#             if hip_angle > 130:
-#                 exercise_match_frames += 1
-            
-#         elif exercise_name == "Leg Raises":
-#             leg_angle = calculate_angle(
-#                 [lm[23].x, lm[23].y],
-#                 [lm[25].x, lm[25].y],
-#                 [lm[27].x, lm[27].y]
-#                 )
-#             if leg_angle > 140:
-#                 exercise_match_frames += 1
-                
-#         elif exercise_name == "Mountain Climbers":
-#             knee_height = abs(lm[25].y - lm[23].y)
-#             if knee_height < -0.05 or knee_height > 0.05:
-#                 exercise_match_frames += 1
-
-#         result = evaluate_posture(exercise_name, lm)
-
-#         if result["risk"] > 40:
-#             improper_frames += 1
-#             fault_counter[result["fault"]] = fault_counter.get(result["fault"], 0) + 1
-
-#     cap.release()
-#     pose.close()
-
-#     if os.path.exists(video_path):
-#         os.remove(video_path)
-
-#     # No pose
-#     if valid_pose_frames == 0:
-#         return {
-#             "status": "no_pose",
-#             "message": "No person detected"
-#         }
-
-#     # No movement
-#     motion_ratio = motion_frames / valid_pose_frames
-#     if motion_ratio < MIN_MOTION_RATIO:
-#         return {
-#             "status": "exercise_not_detected",
-#             "message": "No exercise movement detected"
-#         }
-
-#     # Invalid exercise
-#     if exercise_match_frames < valid_pose_frames * INVALID_EX_THRESHOLD:
-#         return {
-#             "status": "invalid_exercise",
-#             "message": "Exercise does not match selection"
-#         }
-
-#     # Final metrics
-#     risk_percent = int((improper_frames / valid_pose_frames) * 100)
-#     final_fault = max(fault_counter, key=fault_counter.get) if fault_counter else "Good posture"
-#     accuracy = max(0, 100 - risk_percent)
-
-#     return {
-#         "exercise": exercise_name,
-#         "status": "analysis_complete",
-#         "risk_percent": risk_percent,
-#         "fault": final_fault,
-#         "suggestions": get_suggestions(final_fault),
-#         "accuracy_score": accuracy
-#     }

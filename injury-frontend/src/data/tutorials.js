@@ -7,7 +7,7 @@ export const tutorials = {
       "Do not let knees collapse inward ",
     ],
   },
-  Lunges: {
+  "Lunges": {
     videoUrl: "/videos/Lunges.mp4",
     notes: [
       "Maintain straight posture ",
@@ -16,7 +16,7 @@ export const tutorials = {
     ],
   },
 
-  Pushups: {
+  "Pushups": {
     videoUrl:"/videos/Pushup.mp4",
     notes: [
       "Keep body straight ",
@@ -24,7 +24,7 @@ export const tutorials = {
       "Do not sag hips ",
     ],
   },
-  Bridges: {
+  "Bridges": {
     videoUrl: "/videos/bridges.mp4",
     notes: [
       "Squeeze glutes at the top ", 

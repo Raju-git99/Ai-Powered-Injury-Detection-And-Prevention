@@ -488,15 +488,67 @@ def analyze_video(video_path, exercise_name):
                 motion_frames += 1
 
         prev_landmarks = lm
+        
+
+        left_knee_angle = calculate_angle(
+            [lm[23].x, lm[23].y],
+            [lm[25].x, lm[25].y],
+            [lm[27].x, lm[27].y]
+        )
+
+        right_knee_angle = calculate_angle(
+            [lm[24].x, lm[24].y],
+            [lm[26].x, lm[26].y],
+            [lm[28].x, lm[28].y]
+        )
 
         # -------- EXERCISE VALIDATION --------
         if exercise_name == "Jumping Squats":
-            knee_angle = calculate_angle(
-                [lm[23].x, lm[23].y],
-                [lm[25].x, lm[25].y],
-                [lm[27].x, lm[27].y]
-                )
-            if knee_angle < 150:
+
+            squat_knee = (
+                left_knee_angle < 165 and
+                right_knee_angle < 165
+            )
+
+            knee_difference = abs(
+                left_knee_angle -
+                right_knee_angle
+            )
+
+            both_legs_similar = (
+                knee_difference < 35
+            )
+            shoulder_hip_distance = abs(
+                lm[11].y -
+                lm[23].y
+            )
+            vertical_body = (
+                shoulder_hip_distance > 0.15
+            )
+            shoulder_hip_x = abs(
+                lm[11].x -
+                lm[23].x
+            )
+
+            shoulder_hip_y = abs(
+                lm[11].y -
+                lm[23].y
+            )
+
+            standing = (
+                shoulder_hip_y >
+                shoulder_hip_x
+            )
+            hip_below_shoulder = (
+                lm[23].y > 
+                lm[11].y)
+            if (
+                squat_knee
+                and both_legs_similar
+                and vertical_body
+                and standing
+                and hip_below_shoulder
+            ):
                 exercise_match_frames += 1
 
 
@@ -531,15 +583,49 @@ def analyze_video(video_path, exercise_name):
                 exercise_match_frames += 1
 
         elif exercise_name == "Pushups":
+
             elbow_angle = calculate_angle(
                 [lm[11].x, lm[11].y],
-                [lm[13].x, lm[13].y],   
+                [lm[13].x, lm[13].y],
                 [lm[15].x, lm[15].y]
-                )
+            )
+
+            torso_angle = calculate_angle(
+                [lm[11].x, lm[11].y],
+                [lm[23].x, lm[23].y],
+                [lm[27].x, lm[27].y]
+            )
+
             shoulder_y = lm[11].y
             hip_y = lm[23].y
-            body_horizontal = abs(shoulder_y - hip_y) < 0.2
-            if elbow_angle < 160 and body_horizontal:
+            ankle_y = lm[27].y
+
+            # Body should be almost horizontal
+            body_horizontal = (
+                abs(shoulder_y - hip_y) < 0.12 and
+                abs(hip_y - ankle_y) < 0.12
+            )
+
+            # Pushup body should be straight
+            straight_body = torso_angle > 150
+
+            # Wrists should be below shoulders
+            wrist_position = (
+                lm[15].y > lm[11].y
+            )
+
+            # Person should be low on the ground
+            body_low = (
+                hip_y > 0.35
+            )
+
+            if (
+                40 <= elbow_angle <= 170
+                and body_horizontal
+                and straight_body
+                and wrist_position
+                and body_low
+            ):
                 exercise_match_frames += 1
                 
         elif exercise_name == "Bridges":
@@ -783,9 +869,6 @@ def analyze_video(video_path, exercise_name):
             "status": "exercise_not_detected",
             "message": "No exercise movement detected"
         }
-    # print("Valid Pose Frames:", valid_pose_frames)
-    # print("Exercise Match Frames:", exercise_match_frames)
-    # print("Threshold:", valid_pose_frames * INVALID_EX_THRESHOLD)
 
     MIN_MATCH_FRAMES = 5
 

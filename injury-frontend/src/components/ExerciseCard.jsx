@@ -45,7 +45,7 @@ const ExerciseCard = ({ name, image, onSelect, risk = "low" }) => {
         {/* Info */}
         <div className="mt-5 flex flex-col gap-2">
           <h3 className="font-bold text-slate-100 tracking-wide text-lg">
-            {name}
+            {name === "Jumping Squats" ? "Squats" : name}
           </h3>
 
           <div className="flex items-center justify-between mt-2">

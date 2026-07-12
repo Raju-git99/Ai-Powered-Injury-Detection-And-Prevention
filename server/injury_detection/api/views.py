@@ -200,7 +200,7 @@ def analyze_video_api(request):
     result =analyze_video(video_path, exercise_name)
     result["original_video"] = original_video_url
     print("Analysis result:", result)
-    return JsonResponse(result)
+    # return JsonResponse(result)
 
     # print("=============Result=============")
     # print(result)

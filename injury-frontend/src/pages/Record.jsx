@@ -10,7 +10,7 @@ import profileIcon from "../assets/profile.png";
 const AnalyzingSkeleton = () => {
   return (
     <div className="bg-slate-900/40 backdrop-blur-md p-6 rounded-[2rem] border border-slate-800 animate-pulse">
-      <h3 className="text-xs font-black text-cyan-400 uppercase tracking-widest mb-6 flex items-center gap-3">
+      <h3 className="text-xl font-black text-cyan-400 uppercase tracking-widest mb-6 flex items-center gap-3">
         <div className="w-2 h-2 bg-cyan-500 rounded-full animate-ping"></div>
         Neural Engine Processing...
       </h3>
@@ -162,21 +162,31 @@ const Record = () => {
       const borderColor = isCritical ? "border-rose-500/30" : "border-amber-500/30";
 
       return (
-        <div className={`bg-slate-900/60 backdrop-blur-xl p-6 rounded-[2rem] border ${borderColor} shadow-2xl relative overflow-hidden`}>
-          <div className="flex items-center gap-3 mb-3">
-            <div className={`w-2 h-2 rounded-full animate-pulse ${isCritical ? 'bg-rose-500' : 'bg-amber-500'}`}
-              style={{ boxShadow: `0 0 10px ${glowColor}` }}></div>
-            <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${textColor}`}>
-              System Alert: {title}
+        <div>
+          <div className={`bg-slate-900/60 backdrop-blur-xl p-6 rounded-[2rem] border ${borderColor} shadow-2xl relative overflow-hidden`}>
+            <div className="flex items-center gap-3 mb-3">
+              <div className={`w-2 h-2 rounded-full animate-pulse ${isCritical ? 'bg-rose-500' : 'bg-amber-500'}`}
+                style={{ boxShadow: `0 0 10px ${glowColor}` }}></div>
+              <p className={`text-[10px] font-black uppercase tracking-[0.2em] ${textColor}`}>
+                System Alert: {title}
+              </p>
+            </div>
+            <p className="text-xs text-slate-300 font-medium leading-relaxed italic">
+              "{msg}"
             </p>
+            {/* Decorative Technical Footer */}
+            <div className="mt-4 pt-3 border-t border-slate-800/50 flex justify-between items-center opacity-30">
+              <span className="text-[8px] font-mono text-slate-500 uppercase tracking-tighter">Status: {result.status}</span>
+              <div className={`h-1 w-8 ${isCritical ? 'bg-rose-900' : 'bg-amber-900'} rounded-full`}></div>
+            </div>
           </div>
-          <p className="text-xs text-slate-300 font-medium leading-relaxed italic">
-            "{msg}"
-          </p>
-          {/* Decorative Technical Footer */}
-          <div className="mt-4 pt-3 border-t border-slate-800/50 flex justify-between items-center opacity-30">
-            <span className="text-[8px] font-mono text-slate-500 uppercase tracking-tighter">Status: {result.status}</span>
-            <div className={`h-1 w-8 ${isCritical ? 'bg-rose-900' : 'bg-amber-900'} rounded-full`}></div>
+          <div className="mt-8 flex justify-center">
+            <button
+              onClick={resetAnalysis}
+              className="px-12 py-3 bg-cyan-500 text-slate-950 rounded-xl font-black uppercase tracking-widest hover:bg-cyan-400"
+            >
+              Back To Recording
+            </button>
           </div>
         </div>
       );
@@ -366,7 +376,7 @@ const Record = () => {
         >
           <div className="flex justify-between items-center mb-6 px-2">
             <h2 className="text-lg font-black uppercase tracking-[0.3em] text-slate-100">
-              Recording: <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">{exercise}</span>
+              Recording: <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">{exercise === "Jumping Squats" ? "Squats" : exercise}</span>
             </h2>
             <div className="px-3 py-1 rounded bg-red-500/10 border border-red-500/30 flex items-center gap-2">
               <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></div>

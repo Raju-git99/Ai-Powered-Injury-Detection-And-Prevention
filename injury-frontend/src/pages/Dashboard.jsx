@@ -73,7 +73,7 @@ const Dashboard = () => {
   };
 
   const getRiskLevel = (name) => {
-    const highRisk = ["Jumping Squats", "Mountain Climbers"];
+    const highRisk = ["Squats", "Mountain Climbers"];
     const mediumRisk = ["Pushups", "Lunges"];
 
     if (highRisk.includes(name)) return "high";

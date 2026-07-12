@@ -53,7 +53,7 @@ const Tutorial = () => {
           </div>
 
           <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-6">
-            Mastering the <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(34,211,238,0.4)]">{exercise}</span>
+            Mastering the <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(34,211,238,0.4)]">{exercise === "Jumping Squats" ? "Squats" : exercise}</span>
           </h1>
           <p className="text-slate-400 mt-4 max-w-xl mx-auto leading-relaxed text-sm md:text-base font-medium">
             Watch the neural guide carefully. Precision in form is the primary factor in preventing muscular strain and long-term injury.
